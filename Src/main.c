@@ -50,8 +50,6 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
-#include "minidrv.h"
-#include "stdlib.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -136,7 +134,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
 
-  //mutex = xSemaphoreCreateMutex(); 							// Создаем мьютекс
+//	mutex = xSemaphoreCreateMutex(); 						// cоздаем мьютекс
 
   /* USER CODE END RTOS_MUTEX */
 
@@ -244,15 +242,15 @@ static void MX_CAN_Init(void)
 {
 
   hcan.Instance = CAN1;
-  hcan.Init.Prescaler = 16;
+  hcan.Init.Prescaler = 12;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SJW = CAN_SJW_1TQ;
-  hcan.Init.BS1 = CAN_BS1_1TQ;
+  hcan.Init.BS1 = CAN_BS1_2TQ;
   hcan.Init.BS2 = CAN_BS2_1TQ;
   hcan.Init.TTCM = DISABLE;
   hcan.Init.ABOM = DISABLE;
   hcan.Init.AWUM = DISABLE;
-  hcan.Init.NART = DISABLE;
+  hcan.Init.NART = ENABLE;
   hcan.Init.RFLM = DISABLE;
   hcan.Init.TXFP = DISABLE;
   if (HAL_CAN_Init(&hcan) != HAL_OK)
@@ -399,12 +397,13 @@ void StartDefaultTask(void const * argument)
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-  uint8_t dataArray[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-  /* Infinite loop */
+//  В этой задаче данные передаются в канал
+//  uint8_t dataArray[] = { 0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0x7e, 0xf8, 0xf7, 0xf6 };
+//  /* Infinite loop */
   for(;;)
   {
 	  osDelay(1000);
-	  MiniDrv_Transmit(dataArray, sizeof(dataArray));
+//	  MiniDrv_Transmit(dataArray, sizeof(dataArray));
   }
 
   /* USER CODE END StartTask02 */
@@ -420,15 +419,15 @@ void StartTask02(void const * argument)
 void StartTask03(void const * argument)
 {
   /* USER CODE BEGIN StartTask03 */
-//	char temp[3];
-  /* Infinite loop */
-  for(;;)
-  {
-//	  itoa(sizeof(dataArray), temp, 10);
-//	  HAL_UART_Transmit(&huart2, temp, sizeof(temp) - 1, 0xFFFF);
-//	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-	  osDelay(1);
-  }
+//  В этой задаче данные принимаются из канала
+//	uint8_t dataArray[10];
+ 	/* Infinite loop */
+	for(;;)
+	{
+	  osDelay(1000);
+	  MiniDrv_ReceiveUART();
+//	  MiniDrv_ReceiveCAN();
+	}
   /* USER CODE END StartTask03 */
 }
 

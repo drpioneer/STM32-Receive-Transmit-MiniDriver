@@ -1,4 +1,5 @@
 #include "minihdlc.h"
+#include "minidrv.h"
 
 /* HDLC Asynchronous framing */
 /* The frame boundary octet is 01111110, (7E in hexadecimal notation) */
@@ -32,6 +33,8 @@ struct {
 	uint8_t receive_frame_buffer[MINIHDLC_MAX_FRAME_LENGTH + 1];
 } mhst;
 
+UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart2;
 /*
  Polynomial: x^16 + x^12 + x^5 + 1 (0x8408) Initial value: 0xffff
  This is the CRC used by PPP and IrDA.
@@ -112,6 +115,9 @@ void minihdlc_char_receiver(uint8_t data) {
 void minihdlc_send_frame(const uint8_t *frame_buffer, uint8_t frame_length) {
 	uint8_t data;
 	uint16_t fcs = CRC16_CCITT_INIT_VAL;
+
+//	HAL_UART_Transmit(&huart2, frame_buffer, frame_length, 0xFFFF);
+//	fterm (frame_buffer, frame_length);
 
 	minihdlc_sendchar((uint8_t) FRAME_BOUNDARY_OCTET);
 

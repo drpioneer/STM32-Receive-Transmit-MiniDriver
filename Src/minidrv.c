@@ -26,9 +26,53 @@ UART_HandleTypeDef huart2;
  * @param
  * @retval
  */
+void MiniDrv_ByteReceiveUART(uint8_t *dataArray, uint16_t lengthArray)
+{
+	HAL_UART_Transmit(&huart1, dataArray, lengthArray, 0xFFFF);
+	return;
+}
+
+/**
+ * @brief
+ * @param
+ * @retval
+ */
+void MiniDrv_ByteTransmitUART(uint8_t byte)
+{
+	HAL_UART_Transmit(&huart2, &byte, sizeof(byte), 0xFFFF);
+	return;
+}
+
+/**
+ * @brief
+ * @param
+ * @retval
+ */
+void MiniDrv_ByteReceiveCAN(uint8_t *dataArray, uint16_t lengthArray)
+{
+	HAL_CAN_Transmit(&hcan, 0xFFFF);
+	return;
+}
+
+/**
+ * @brief
+ * @param
+ * @retval
+ */
+void MiniDrv_ByteTransmitCAN(uint8_t byte)
+{
+	HAL_CAN_Transmit(&hcan, 0xFFFF);
+	return;
+}
+
+/**
+ * @brief
+ * @param
+ * @retval
+ */
 void MiniDrv_Init(void)
 {
-//	minihdlc_init();
+	minihdlc_init(MiniDrv_ByteTransmitUART, MiniDrv_ByteReceiveUART);
 	return;
 }
 
@@ -37,8 +81,20 @@ void MiniDrv_Init(void)
  * @param
  * @retval
  */
-void MiniDrv_Start(void)
+void MiniDrv_ReceiveUART()
 {
+	uint8_t dataByte[100];
+//	uint16_t dataLength = 1024;
+//	uint16_t i;
+
+	HAL_UART_Receive(&huart2, dataByte, sizeof(dataByte), 0xFFFF);
+
+	for(int i = 0; i < sizeof(dataByte); i++)
+	{
+		minihdlc_char_receiver(dataByte[i]);
+	}
+
+	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 	return;
 }
 
@@ -47,30 +103,17 @@ void MiniDrv_Start(void)
  * @param
  * @retval
  */
-void MiniDrv_DataPack(void)
+void MiniDrv_ReceiveCAN()
 {
+	uint8_t dataByte[100];
+	HAL_CAN_Receive(&hcan, CAN_FIFO0, 0xFFFF);
 
-	return;
-}
+	for(int i = 0; i < sizeof(dataByte); i++)
+	{
+		minihdlc_char_receiver(dataByte[i]);
+	}
 
-/**
- * @brief
- * @param
- * @retval
- */
-void MiniDrv_DataUnpack(void)
-{
-
-	return;
-}
-
-/**
- * @brief
- * @param
- * @retval
- */
-void MiniDrv_Receive(uint8_t *dataArray, uint8_t lengthArray)
-{
+	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 	return;
 }
 
@@ -81,48 +124,13 @@ void MiniDrv_Receive(uint8_t *dataArray, uint8_t lengthArray)
  */
 void MiniDrv_Transmit(uint8_t *dataArray, uint8_t lengthArray)
 {
+
 	minihdlc_send_frame(dataArray, lengthArray);
+//	fterm (dataArray, lengthArray);
 //	HAL_UART_Transmit(&huart2, dataArray, lengthArray, 0xFFFF);
 	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 	return;
 }
 
-/**
- * @brief
- * @param
- * @retval
- */
-void MiniDrv_SendUART(void)
-{
-	return;
-}
 
-/**
- * @brief
- * @param
- * @retval
- */
-void MiniDrv_ReceiveUART(void)
-{
-	return;
-}
 
-/**
- * @brief
- * @param
- * @retval
- */
-void MiniDrv_SendCAN(void)
-{
-	return;
-}
-
-/**
- * @brief
- * @param
- * @retval
- */
-void MiniDrv_ReceiveCAN(void)
-{
-	return;
-}
