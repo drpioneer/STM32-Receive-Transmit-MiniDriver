@@ -52,7 +52,7 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "minidrv.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -68,6 +68,9 @@ osThreadId myTask02Handle;
 osThreadId myTask03Handle;
 
 /* USER CODE BEGIN PV */
+uint8_t *pDataArray;
+uint8_t *pSize;
+
 /* Private variables ---------------------------------------------------------*/
 //volatile xSemaphoreHandle mutex; // Дескриптор мьютекса
 /* USER CODE END PV */
@@ -89,6 +92,8 @@ void StartTask03(void const * argument);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+
 
 /* USER CODE END 0 */
 
@@ -127,7 +132,8 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  MiniDrv_Init();											// инициализация драйвера
+//  MiniDrv_Init(&pDataArray, pSize);											// инициализация мини драйвера
+  MiniDrv_Init();											// инициализация мини драйвера
 
   /* USER CODE END 2 */
 
@@ -152,11 +158,11 @@ int main(void)
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of myTask02 */
-  osThreadDef(myTask02, StartTask02, osPriorityIdle, 0, 128);
+  osThreadDef(myTask02, StartTask02, osPriorityNormal, 0, 128);
   myTask02Handle = osThreadCreate(osThread(myTask02), NULL);
 
   /* definition and creation of myTask03 */
-  osThreadDef(myTask03, StartTask03, osPriorityIdle, 0, 128);
+  osThreadDef(myTask03, StartTask03, osPriorityNormal, 0, 128);
   myTask03Handle = osThreadCreate(osThread(myTask03), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -382,7 +388,8 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(1);
+	  osDelay(1000);
+	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);				// Индикация активности отладочной платы
   }
   /* USER CODE END 5 */ 
 }
@@ -397,13 +404,15 @@ void StartDefaultTask(void const * argument)
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-//  В этой задаче данные передаются в канал
+  /* Отправка данных в канал (передатчик) */
+
 //  uint8_t dataArray[] = { 0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0x7e, 0xf8, 0xf7, 0xf6 };
-//  /* Infinite loop */
+
+  /* Infinite loop */
   for(;;)
   {
-	  osDelay(1000);
-//	  MiniDrv_Transmit(dataArray, sizeof(dataArray));
+//	MiniDrv_Send(dataArray, sizeof(dataArray));				// Отправка данных в канал
+	osDelay(1000);
   }
 
   /* USER CODE END StartTask02 */
@@ -419,14 +428,14 @@ void StartTask02(void const * argument)
 void StartTask03(void const * argument)
 {
   /* USER CODE BEGIN StartTask03 */
-//  В этой задаче данные принимаются из канала
-//	uint8_t dataArray[10];
+    /* Приём данных из канала (приёмник) */
+
  	/* Infinite loop */
 	for(;;)
 	{
+	  MiniDrv_Receive();										// Приём данных из канала
+//	  HAL_UART_Transmit(&huart1, dataArray, *pSize, 0xFFFF);
 	  osDelay(1000);
-	  MiniDrv_ReceiveUART();
-//	  MiniDrv_ReceiveCAN();
 	}
   /* USER CODE END StartTask03 */
 }

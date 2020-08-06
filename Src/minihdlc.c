@@ -116,9 +116,6 @@ void minihdlc_send_frame(const uint8_t *frame_buffer, uint8_t frame_length) {
 	uint8_t data;
 	uint16_t fcs = CRC16_CCITT_INIT_VAL;
 
-//	HAL_UART_Transmit(&huart2, frame_buffer, frame_length, 0xFFFF);
-//	fterm (frame_buffer, frame_length);
-
 	minihdlc_sendchar((uint8_t) FRAME_BOUNDARY_OCTET);
 
 	while (frame_length) {
