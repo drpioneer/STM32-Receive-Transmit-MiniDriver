@@ -10,15 +10,15 @@
 #include "stm32f1xx_hal.h"
 #include "minihdlc.h"
 
-#define UART;		// Оставить для работы с UART. Закомментировать для работы с CAN
+#define UART;		// Для работы с UART - оставить как есть. Для работы с CAN - закомментировать
 
 CAN_HandleTypeDef hcan;
 TIM_HandleTypeDef htim1;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
-extern uint8_t *pdataArray;
-extern uint8_t *pSize;
+//extern uint8_t *pDataArray;
+//extern uint8_t *pLengthArray;
 
 #ifndef UART
 
@@ -29,9 +29,9 @@ uint8_t txData[8];
 uint8_t txMailBox;
 
 /**
- * @brief	Подготовка CAN к работе
- * @param
- * @retval
+ * @brief	configuring CAN to work
+ * @param	none
+ * @retval	none
  */
 void CanConfig(void)
 {
@@ -63,22 +63,25 @@ void CanConfig(void)
 #endif
 
 /**
- * @brief
- * @param
- * @retval	lengthArray
+ * @brief	sending the extracted data to the terminal
+ * @param	*dataArray - pointer to a byte array with data
+ * 			lengthArray - length of a byte array with data
+ * @retval	none
  */
-uint16_t MiniDrv_SendUnpackDataInTerminal(uint8_t *dataArray, uint16_t lengthArray)
+void MiniDrv_SendUnpackDataInTerminal(uint8_t *dataArray, uint16_t lengthArray)
 {
-//	pArray = dataArray;
-//	pSize = &lengthArray;
+//	*pDataArray = &dataArray[0];
+//	*pLengthArray = &lengthArray;
 	HAL_UART_Transmit(&huart1, dataArray, lengthArray, 0xFFFF);
-	return lengthArray;
+	return;
 }
 
+#ifdef UART
+
 /**
- * @brief
- * @param
- * @retval
+ * @brief	sends the packed data to UART
+ * @param	byte - one byte of data to send UART
+ * @retval	none
  */
 void MiniDrv_SendPackDataViaUART(uint8_t byte)
 {
@@ -86,11 +89,12 @@ void MiniDrv_SendPackDataViaUART(uint8_t byte)
 	return;
 }
 
-#ifndef UART
+#else
+
 /**
- * @brief
- * @param
- * @retval
+ * @brief	sends the packed data to CAN
+ * @param	byte - one byte of data to send CAN
+ * @retval	none
  */
 void MiniDrv_SendPackDataViaCAN(uint8_t byte)
 {
@@ -101,11 +105,12 @@ void MiniDrv_SendPackDataViaCAN(uint8_t byte)
 #endif
 
 /**
- * @brief
- * @param
- * @retval
+ * @brief	configures the code to work with the specified transmission channel
+ * @param	none
+ * @retval	none
  */
-void MiniDrv_Init(uint8_t *pData, uint8_t *pLength)
+//void MiniDrv_Init(uint8_t *pData, uint8_t *pLength)
+void MiniDrv_Init()
 {
 #ifdef UART
 	minihdlc_init(MiniDrv_SendPackDataViaUART, MiniDrv_SendUnpackDataInTerminal);	// Для UART
@@ -117,27 +122,25 @@ void MiniDrv_Init(uint8_t *pData, uint8_t *pLength)
 }
 
 /**
- * @brief
- * @param
+ * @brief	packages and transmits a packet to the specified transmission channel
+ * @param	*dataArray - pointer to a byte array with data
+ * 			lengthArray - length of a byte array with data
  * @retval
  */
 void MiniDrv_Send(uint8_t *dataArray, uint8_t lengthArray)
 {
-	/* Передача исходного пакета данных на упаковку и отсылку в канал */
 	minihdlc_send_frame(dataArray, lengthArray);
 	return;
 }
 
 /**
- * @brief
- * @param
- * @retval
+ * @brief	accepts the packed data from the specified channel and sends it for unpacking
+ * @param	none
+ * @retval	none
  */
 void MiniDrv_Receive()
 {
 	uint8_t byte[100];
-
-	/* Приём упакованных данных из заданного канала */
 
 #ifdef UART
 	HAL_UART_Receive(&huart2, &byte, sizeof(byte), 0xFFFF);
@@ -145,7 +148,6 @@ void MiniDrv_Receive()
 	HAL_CAN_Receive(&hcan, CAN_FIFO0, 10);
 #endif
 
-	/* Передача поступающих данных из канала на распаковку */
 	for(int i = 0; i < sizeof(byte); i++)
 	{
 		minihdlc_char_receiver( byte[i] );

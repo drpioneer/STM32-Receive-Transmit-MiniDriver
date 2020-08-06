@@ -51,6 +51,8 @@
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
 
+#include <stdio.h>
+
 /* USER CODE BEGIN Includes */
 #include "minidrv.h"
 /* USER CODE END Includes */
@@ -68,11 +70,16 @@ osThreadId myTask02Handle;
 osThreadId myTask03Handle;
 
 /* USER CODE BEGIN PV */
-uint8_t *pDataArray;
-uint8_t *pSize;
+
+/* Объявление массива данных и его длины */
+uint8_t dataArray[] = { 0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0x7e, 0xf8, 0xf7, 0xf6 };
+//uint8_t dataArray[100];
+//uint16_t lengthArray = sizeof(dataArray);
+//uint8_t *pDataArray = &dataArray[0];
+//uint8_t *pLengthArray = &lengthArray;
 
 /* Private variables ---------------------------------------------------------*/
-//volatile xSemaphoreHandle mutex; // Дескриптор мьютекса
+//volatile xSemaphoreHandle mutex;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -132,8 +139,8 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-//  MiniDrv_Init(&pDataArray, pSize);											// инициализация мини драйвера
-  MiniDrv_Init();											// инициализация мини драйвера
+  MiniDrv_Init();						  // инициализация мини драйвера
+//  MiniDrv_Init(&pDataArray, &pLengthArray);		// инициализация мини драйвера
 
   /* USER CODE END 2 */
 
@@ -388,8 +395,8 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);				// Индикация активности платы
 	  osDelay(1000);
-	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);				// Индикация активности отладочной платы
   }
   /* USER CODE END 5 */ 
 }
@@ -411,7 +418,7 @@ void StartTask02(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-//	MiniDrv_Send(dataArray, sizeof(dataArray));				// Отправка данных в канал
+	MiniDrv_Send(dataArray, sizeof(dataArray));
 	osDelay(1000);
   }
 
@@ -433,8 +440,7 @@ void StartTask03(void const * argument)
  	/* Infinite loop */
 	for(;;)
 	{
-	  MiniDrv_Receive();										// Приём данных из канала
-//	  HAL_UART_Transmit(&huart1, dataArray, *pSize, 0xFFFF);
+//	  MiniDrv_Receive();
 	  osDelay(1000);
 	}
   /* USER CODE END StartTask03 */
