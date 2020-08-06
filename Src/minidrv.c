@@ -10,23 +10,20 @@
 #include "stm32f1xx_hal.h"
 #include "minihdlc.h"
 
-#define UART;		// Для работы с UART - оставить как есть. Для работы с CAN - закомментировать
+/*    Для работы с UART -> раскомментировать строку: '#define UART;'
+ *    для работы с CAN  -> закомментировать строку:  '#define UART;'           */
+#define UART;
 
 CAN_HandleTypeDef hcan;
 TIM_HandleTypeDef htim1;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
-//extern uint8_t *pDataArray;
-//extern uint8_t *pLengthArray;
-
 #ifndef UART
 
-CAN_FilterConfTypeDef*	sFilterConfig;
-static CanTxMsgTypeDef	txHeader;
-static CanRxMsgTypeDef  rxHeader;
-uint8_t txData[8];
-uint8_t txMailBox;
+CAN_FilterConfTypeDef	sFilterConfig;
+CanTxMsgTypeDef			txHeader;
+CanRxMsgTypeDef			rxHeader;
 
 /**
  * @brief	configuring CAN to work
@@ -35,30 +32,49 @@ uint8_t txMailBox;
  */
 void CanConfig(void)
 {
-	sFilterConfig->FilterNumber = 0;
-	sFilterConfig->FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig->FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig->FilterIdHigh = 0x0000;
-	sFilterConfig->FilterIdLow = 0x0000;
-	sFilterConfig->FilterMaskIdHigh = 0x0000;
-	sFilterConfig->FilterMaskIdLow = 0x0000;
-	sFilterConfig->FilterFIFOAssignment = 0;
-	sFilterConfig->FilterActivation = ENABLE;
-	sFilterConfig->BankNumber = 14;
+	sFilterConfig.FilterNumber = 1;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh = 0x0000;
+	sFilterConfig.FilterIdLow = 0x0000;
+	sFilterConfig.FilterMaskIdHigh = 0x0000;
+	sFilterConfig.FilterMaskIdLow = 0x0000;
+	sFilterConfig.FilterFIFOAssignment = CAN_FIFO0;
+	sFilterConfig.FilterActivation = ENABLE;
+	sFilterConfig.BankNumber = 14;
 
-	txHeader.StdId = 0x0122;
-	txHeader.ExtId = 0x0000;
+	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
+
+	txHeader.StdId = 0x321;
+	txHeader.ExtId = 0x000;
 	txHeader.RTR = CAN_RTR_DATA;
 	txHeader.IDE = CAN_ID_STD;
 	txHeader.DLC = 1;											// Количество данных в CAN посылке
-	txData[0] = 0xFF;											// Поле данных в CAN посылке
-	txData[1] = 0xFE;
-	txData[2] = 0xFD;
-	txData[3] = 0xFC;
-	txData[4] = 0xFB;
-	txData[5] = 0xFA;
-	txData[6] = 0xF9;
-	txData[7] = 0xF8;
+	txHeader.Data[0] = 0xFF;									// Данные в CAN посылке
+	txHeader.Data[1] = 0xFE;
+	txHeader.Data[2] = 0xFD;
+	txHeader.Data[3] = 0xFC;
+	txHeader.Data[4] = 0xFB;
+	txHeader.Data[5] = 0xFA;
+	txHeader.Data[6] = 0xF9;
+	txHeader.Data[7] = 0xF8;
+
+	// обнуление буфера для сообщения
+	rxHeader.FIFONumber = CAN_FIFO0;
+	rxHeader.StdId = 0x00;
+	rxHeader.ExtId = 0x00;
+	rxHeader.RTR =   0x00;
+	rxHeader.IDE =   0x00;
+	rxHeader.DLC =   0x00;
+	rxHeader.Data[0] = 0x00;
+	rxHeader.Data[1] = 0x00;
+	rxHeader.Data[2] = 0x00;
+	rxHeader.Data[3] = 0x00;
+	rxHeader.Data[4] = 0x00;
+	rxHeader.Data[5] = 0x00;
+	rxHeader.Data[6] = 0x00;
+	rxHeader.Data[7] = 0x00;
+
 }
 #endif
 
@@ -98,10 +114,11 @@ void MiniDrv_SendPackDataViaUART(uint8_t byte)
  */
 void MiniDrv_SendPackDataViaCAN(uint8_t byte)
 {
-	txData[7] = byte;
+	txHeader.Data[7] = byte;
 	HAL_CAN_Transmit(&hcan, 10);
 	return;
 }
+
 #endif
 
 /**
@@ -112,11 +129,16 @@ void MiniDrv_SendPackDataViaCAN(uint8_t byte)
 //void MiniDrv_Init(uint8_t *pData, uint8_t *pLength)
 void MiniDrv_Init()
 {
+
 #ifdef UART
-	minihdlc_init(MiniDrv_SendPackDataViaUART, MiniDrv_SendUnpackDataInTerminal);	// Для UART
+
+	minihdlc_init(MiniDrv_SendPackDataViaUART, MiniDrv_SendUnpackDataInTerminal);
+
 #else
-	CanConfig();												// подготовка CAN к работе
-	minihdlc_init(MiniDrv_SendPackDataViaCAN, MiniDrv_SendUnpackDataInTerminal);	// Для CAN
+
+	CanConfig();
+	minihdlc_init(MiniDrv_SendPackDataViaCAN, MiniDrv_SendUnpackDataInTerminal);
+
 #endif
 	return;
 }
@@ -141,16 +163,19 @@ void MiniDrv_Send(uint8_t *dataArray, uint8_t lengthArray)
 void MiniDrv_Receive()
 {
 	uint8_t byte[100];
+//	uint8_t data;
 
 #ifdef UART
-	HAL_UART_Receive(&huart2, &byte, sizeof(byte), 0xFFFF);
+	HAL_UART_Receive(&huart2, &byte, sizeof(byte), 10);
 #else
-	HAL_CAN_Receive(&hcan, CAN_FIFO0, 10);
+	HAL_CAN_Receive(&hcan, CAN_FIFO0, 0xFFFF);
+//	data = rxHeader.Data[7];
 #endif
 
 	for(int i = 0; i < sizeof(byte); i++)
 	{
 		minihdlc_char_receiver( byte[i] );
+//		minihdlc_char_receiver( data );
 	}
 
 	return;

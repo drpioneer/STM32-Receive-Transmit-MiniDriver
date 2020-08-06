@@ -139,7 +139,7 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  MiniDrv_Init();						  // инициализация мини драйвера
+  MiniDrv_Init();						  			// инициализация мини драйвера
 //  MiniDrv_Init(&pDataArray, &pLengthArray);		// инициализация мини драйвера
 
   /* USER CODE END 2 */
@@ -411,9 +411,8 @@ void StartDefaultTask(void const * argument)
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-  /* Отправка данных в канал (передатчик) */
 
-//  uint8_t dataArray[] = { 0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0x7e, 0xf8, 0xf7, 0xf6 };
+  /* Отправка данных в канал (передатчик) */
 
   /* Infinite loop */
   for(;;)
@@ -435,6 +434,7 @@ void StartTask02(void const * argument)
 void StartTask03(void const * argument)
 {
   /* USER CODE BEGIN StartTask03 */
+
     /* Приём данных из канала (приёмник) */
 
  	/* Infinite loop */
