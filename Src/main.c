@@ -50,10 +50,9 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
-#include "minidrv.h"
-#include "stdlib.h"
-
 /* USER CODE BEGIN Includes */
+
+#include "minidrv.h"
 
 /* USER CODE END Includes */
 
@@ -70,8 +69,14 @@ osThreadId myTask02Handle;
 osThreadId myTask03Handle;
 
 /* USER CODE BEGIN PV */
+
+/* Declaring a data array and its length */
+uint8_t dataArray[] = { 0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0x7e, 0xf8, 0xf7, 0xf6 };
+
 /* Private variables ---------------------------------------------------------*/
-//volatile xSemaphoreHandle mutex; // Дескриптор мьютекса
+
+//volatile xSemaphoreHandle mutex;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,6 +96,8 @@ void StartTask03(void const * argument);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+
 
 /* USER CODE END 0 */
 
@@ -129,14 +136,15 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  MiniDrv_Init();											// инициализация драйвера
+  /* Initializing the mini driver */
+  MiniDrv_Init();
 
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
 
-  //mutex = xSemaphoreCreateMutex(); 							// Создаем мьютекс
+//	mutex = xSemaphoreCreateMutex();
 
   /* USER CODE END RTOS_MUTEX */
 
@@ -154,11 +162,11 @@ int main(void)
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of myTask02 */
-  osThreadDef(myTask02, StartTask02, osPriorityIdle, 0, 128);
+  osThreadDef(myTask02, StartTask02, osPriorityNormal, 0, 128);
   myTask02Handle = osThreadCreate(osThread(myTask02), NULL);
 
   /* definition and creation of myTask03 */
-  osThreadDef(myTask03, StartTask03, osPriorityIdle, 0, 128);
+  osThreadDef(myTask03, StartTask03, osPriorityNormal, 0, 128);
   myTask03Handle = osThreadCreate(osThread(myTask03), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -244,15 +252,15 @@ static void MX_CAN_Init(void)
 {
 
   hcan.Instance = CAN1;
-  hcan.Init.Prescaler = 16;
+  hcan.Init.Prescaler = 12;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SJW = CAN_SJW_1TQ;
-  hcan.Init.BS1 = CAN_BS1_1TQ;
+  hcan.Init.BS1 = CAN_BS1_2TQ;
   hcan.Init.BS2 = CAN_BS2_1TQ;
   hcan.Init.TTCM = DISABLE;
   hcan.Init.ABOM = DISABLE;
   hcan.Init.AWUM = DISABLE;
-  hcan.Init.NART = DISABLE;
+  hcan.Init.NART = ENABLE;
   hcan.Init.RFLM = DISABLE;
   hcan.Init.TXFP = DISABLE;
   if (HAL_CAN_Init(&hcan) != HAL_OK)
@@ -384,7 +392,9 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(1);
+	  /* Indication of activity of the devboard */
+	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+	  osDelay(1000);
   }
   /* USER CODE END 5 */ 
 }
@@ -399,12 +409,14 @@ void StartDefaultTask(void const * argument)
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-  uint8_t dataArray[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+  /* Sending data to channel (transmitter) */
+
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(1000);
-	  MiniDrv_Transmit(dataArray, sizeof(dataArray));
+	MiniDrv_Send(dataArray, sizeof(dataArray));
+	osDelay(1000);
   }
 
   /* USER CODE END StartTask02 */
@@ -420,15 +432,15 @@ void StartTask02(void const * argument)
 void StartTask03(void const * argument)
 {
   /* USER CODE BEGIN StartTask03 */
-//	char temp[3];
-  /* Infinite loop */
-  for(;;)
-  {
-//	  itoa(sizeof(dataArray), temp, 10);
-//	  HAL_UART_Transmit(&huart2, temp, sizeof(temp) - 1, 0xFFFF);
-//	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-	  osDelay(1);
-  }
+
+    /* Receiving data from channel (receiver) */
+
+ 	/* Infinite loop */
+	for(;;)
+	{
+//	  MiniDrv_Receive();
+	  osDelay(1000);
+	}
   /* USER CODE END StartTask03 */
 }
 
