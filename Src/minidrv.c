@@ -10,8 +10,8 @@
 #include "stm32f1xx_hal.h"
 #include "minihdlc.h"
 
-/*    Для работы с UART -> раскомментировать строку: '#define UART;'
- *    для работы с CAN  -> закомментировать строку:  '#define UART;'           */
+/* To work with UART -> uncomment the string: "#define UART;"
+ * To work with CAN  -> comment the string:   "#define UART;"       */
 #define UART;
 
 CAN_HandleTypeDef hcan;
@@ -49,8 +49,8 @@ void CanConfig(void)
 	txHeader.ExtId = 0x000;
 	txHeader.RTR = CAN_RTR_DATA;
 	txHeader.IDE = CAN_ID_STD;
-	txHeader.DLC = 1;											// Количество данных в CAN посылке
-	txHeader.Data[0] = 0xFF;									// Данные в CAN посылке
+	txHeader.DLC = 1;
+	txHeader.Data[0] = 0xFF;
 	txHeader.Data[1] = 0xFE;
 	txHeader.Data[2] = 0xFD;
 	txHeader.Data[3] = 0xFC;
@@ -59,7 +59,6 @@ void CanConfig(void)
 	txHeader.Data[6] = 0xF9;
 	txHeader.Data[7] = 0xF8;
 
-	// обнуление буфера для сообщения
 	rxHeader.FIFONumber = CAN_FIFO0;
 	rxHeader.StdId = 0x00;
 	rxHeader.ExtId = 0x00;
@@ -74,7 +73,6 @@ void CanConfig(void)
 	rxHeader.Data[5] = 0x00;
 	rxHeader.Data[6] = 0x00;
 	rxHeader.Data[7] = 0x00;
-
 }
 #endif
 
@@ -86,8 +84,6 @@ void CanConfig(void)
  */
 void MiniDrv_SendUnpackDataInTerminal(uint8_t *dataArray, uint16_t lengthArray)
 {
-//	*pDataArray = &dataArray[0];
-//	*pLengthArray = &lengthArray;
 	HAL_UART_Transmit(&huart1, dataArray, lengthArray, 0xFFFF);
 	return;
 }
@@ -131,15 +127,12 @@ void MiniDrv_Init()
 {
 
 #ifdef UART
-
 	minihdlc_init(MiniDrv_SendPackDataViaUART, MiniDrv_SendUnpackDataInTerminal);
-
 #else
-
 	CanConfig();
 	minihdlc_init(MiniDrv_SendPackDataViaCAN, MiniDrv_SendUnpackDataInTerminal);
-
 #endif
+
 	return;
 }
 
@@ -171,7 +164,6 @@ void MiniDrv_Receive()
 	HAL_CAN_Receive(&hcan, CAN_FIFO0, 0xFFFF);
 //	data = rxHeader.Data[7];
 #endif
-
 	for(int i = 0; i < sizeof(byte); i++)
 	{
 		minihdlc_char_receiver( byte[i] );

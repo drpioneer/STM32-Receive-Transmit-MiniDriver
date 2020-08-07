@@ -50,11 +50,10 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
-
-#include <stdio.h>
-
 /* USER CODE BEGIN Includes */
+
 #include "minidrv.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -71,15 +70,13 @@ osThreadId myTask03Handle;
 
 /* USER CODE BEGIN PV */
 
-/* Объявление массива данных и его длины */
+/* Declaring a data array and its length */
 uint8_t dataArray[] = { 0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0x7e, 0xf8, 0xf7, 0xf6 };
-//uint8_t dataArray[100];
-//uint16_t lengthArray = sizeof(dataArray);
-//uint8_t *pDataArray = &dataArray[0];
-//uint8_t *pLengthArray = &lengthArray;
 
 /* Private variables ---------------------------------------------------------*/
+
 //volatile xSemaphoreHandle mutex;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -139,15 +136,15 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  MiniDrv_Init();						  			// инициализация мини драйвера
-//  MiniDrv_Init(&pDataArray, &pLengthArray);		// инициализация мини драйвера
+  /* Initializing the mini driver */
+  MiniDrv_Init();
 
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
 
-//	mutex = xSemaphoreCreateMutex(); 						// cоздаем мьютекс
+//	mutex = xSemaphoreCreateMutex();
 
   /* USER CODE END RTOS_MUTEX */
 
@@ -395,7 +392,8 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);				// Индикация активности платы
+	  /* Indication of activity of the devboard */
+	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 	  osDelay(1000);
   }
   /* USER CODE END 5 */ 
@@ -412,7 +410,7 @@ void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
 
-  /* Отправка данных в канал (передатчик) */
+  /* Sending data to channel (transmitter) */
 
   /* Infinite loop */
   for(;;)
@@ -435,7 +433,7 @@ void StartTask03(void const * argument)
 {
   /* USER CODE BEGIN StartTask03 */
 
-    /* Приём данных из канала (приёмник) */
+    /* Receiving data from channel (receiver) */
 
  	/* Infinite loop */
 	for(;;)
