@@ -12,7 +12,7 @@
 
 /* To work with UART -> uncomment the string: "#define UART;"
  * To work with CAN  -> comment the string:   "#define UART;"       */
-#define UART;
+//#define UART;
 
 CAN_HandleTypeDef hcan;
 TIM_HandleTypeDef htim1;
@@ -21,9 +21,9 @@ UART_HandleTypeDef huart2;
 
 #ifndef UART
 
-CAN_FilterConfTypeDef	sFilterConfig;
-CanTxMsgTypeDef			txHeader;
-CanRxMsgTypeDef			rxHeader;
+CAN_FilterTypeDef		sFilterConfig;
+CAN_TxHeaderTypeDef		txHeader;
+CAN_RxHeaderTypeDef		rxHeader;
 
 /**
  * @brief	configuring CAN to work
@@ -32,47 +32,32 @@ CanRxMsgTypeDef			rxHeader;
  */
 void CanConfig(void)
 {
-	sFilterConfig.FilterNumber = 1;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh = 0x0000;
-	sFilterConfig.FilterIdLow = 0x0000;
-	sFilterConfig.FilterMaskIdHigh = 0x0000;
-	sFilterConfig.FilterMaskIdLow = 0x0000;
-	sFilterConfig.FilterFIFOAssignment = CAN_FIFO0;
-	sFilterConfig.FilterActivation = ENABLE;
-	sFilterConfig.BankNumber = 14;
+	sFilterConfig.FilterBank 			= 1;
+	sFilterConfig.FilterMode 			= CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale 			= CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh 			= 0x0000;
+	sFilterConfig.FilterIdLow 			= 0x0000;
+	sFilterConfig.FilterMaskIdHigh 		= 0x0000;
+	sFilterConfig.FilterMaskIdLow 		= 0x0000;
+	sFilterConfig.FilterFIFOAssignment 	= 0;
+	sFilterConfig.FilterActivation 		= ENABLE;
+	sFilterConfig.SlaveStartFilterBank 	= 14;
 
 	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
+	HAL_CAN_Start(&hcan);
 
-	txHeader.StdId = 0x321;
-	txHeader.ExtId = 0x000;
-	txHeader.RTR = CAN_RTR_DATA;
-	txHeader.IDE = CAN_ID_STD;
-	txHeader.DLC = 1;
-	txHeader.Data[0] = 0xFF;
-	txHeader.Data[1] = 0xFE;
-	txHeader.Data[2] = 0xFD;
-	txHeader.Data[3] = 0xFC;
-	txHeader.Data[4] = 0xFB;
-	txHeader.Data[5] = 0xFA;
-	txHeader.Data[6] = 0xF9;
-	txHeader.Data[7] = 0xF8;
+//	txHeader.StdId 						= 0x000;
+//	txHeader.ExtId 						= 0x000;
+//	txHeader.RTR 						= CAN_RTR_DATA;
+//	txHeader.IDE 						= CAN_ID_STD;
+//	txHeader.DLC 						= 1;
+//
+//	rxHeader.StdId 						= 0x00;
+//	rxHeader.ExtId 						= 0x00;
+//	rxHeader.RTR 						= 0x00;
+//	rxHeader.IDE						= 0x00;
+//	rxHeader.DLC 						= 0x00;
 
-	rxHeader.FIFONumber = CAN_FIFO0;
-	rxHeader.StdId = 0x00;
-	rxHeader.ExtId = 0x00;
-	rxHeader.RTR =   0x00;
-	rxHeader.IDE =   0x00;
-	rxHeader.DLC =   0x00;
-	rxHeader.Data[0] = 0x00;
-	rxHeader.Data[1] = 0x00;
-	rxHeader.Data[2] = 0x00;
-	rxHeader.Data[3] = 0x00;
-	rxHeader.Data[4] = 0x00;
-	rxHeader.Data[5] = 0x00;
-	rxHeader.Data[6] = 0x00;
-	rxHeader.Data[7] = 0x00;
 }
 #endif
 
@@ -110,8 +95,15 @@ void MiniDrv_SendPackDataViaUART(uint8_t byte)
  */
 void MiniDrv_SendPackDataViaCAN(uint8_t byte)
 {
-	txHeader.Data[7] = byte;
-	HAL_CAN_Transmit(&hcan, 10);
+	txHeader.StdId 						= 0x000;
+	txHeader.ExtId 						= 0x000;
+	txHeader.RTR 						= CAN_RTR_DATA;
+	txHeader.IDE 						= CAN_ID_STD;
+	txHeader.DLC 						= 1;
+
+	uint32_t mailBoxNum = 0;
+
+	HAL_CAN_AddTxMessage(&hcan, &txHeader, &byte, &mailBoxNum);
 	return;
 }
 
@@ -156,18 +148,17 @@ void MiniDrv_Send(uint8_t *dataArray, uint8_t lengthArray)
 void MiniDrv_Receive()
 {
 	uint8_t byte[100];
-//	uint8_t data;
 
 #ifdef UART
 	HAL_UART_Receive(&huart2, &byte, sizeof(byte), 10);
 #else
-	HAL_CAN_Receive(&hcan, CAN_FIFO0, 0xFFFF);
-//	data = rxHeader.Data[7];
+	uint8_t msgData[7];
+	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &rxHeader, msgData);
+
 #endif
 	for(int i = 0; i < sizeof(byte); i++)
 	{
 		minihdlc_char_receiver( byte[i] );
-//		minihdlc_char_receiver( data );
 	}
 
 	return;

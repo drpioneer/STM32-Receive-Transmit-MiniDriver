@@ -10,6 +10,7 @@ Src/stm32f1xx_hal_msp.c
 Src/stm32f1xx_hal_timebase_TIM.c
 Src/stm32f1xx_it.c
 Src/system_stm32f1xx.c
+Src/syscalls.c
 startup
 .code_review_properties
 .cproject
