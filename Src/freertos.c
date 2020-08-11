@@ -76,7 +76,7 @@
 
 /* To work with RECEIVER   -> uncomment the string: "#define RECEIVER;"
  * To work with TRANSMITER -> comment the string:   "#define RECEIVER;"       */
-#define RECEIVER
+//#define RECEIVER
 
 /* USER CODE END PM */
 
@@ -205,7 +205,7 @@ void StartTask02(void const * argument)
 
 	/* Sending data to channel (transmitter) */
 #ifndef RECEIVER
-    MiniDrv_Send(dataArray, sizeof(dataArray));
+//    MiniDrv_Send(dataArray, sizeof(dataArray));
 #endif
 	osDelay(1000);
 

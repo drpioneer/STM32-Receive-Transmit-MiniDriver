@@ -9,10 +9,11 @@
 
 #include "stm32f1xx_hal.h"
 #include "minihdlc.h"
+#include "main.h"
 
 /* To work with UART -> uncomment the string: "#define UART;"
  * To work with CAN  -> comment the string:   "#define UART;"       */
-#define UART
+//#define UART
 
 #define UART_TIMEOUT 0xFF
 
@@ -26,6 +27,9 @@ UART_HandleTypeDef huart2;
 CAN_FilterTypeDef		sFilterConfig;
 CAN_TxHeaderTypeDef		txHeader;
 CAN_RxHeaderTypeDef		rxHeader;
+uint8_t               	txData[8];
+uint8_t               	rxData[8];
+uint32_t              	txMailbox;
 
 /**
  * @brief	configuring CAN to work
@@ -34,21 +38,26 @@ CAN_RxHeaderTypeDef		rxHeader;
  */
 void CanConfig(void)
 {
-	sFilterConfig.FilterBank 			= 0;
-	sFilterConfig.FilterMode 			= CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale 			= CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh 			= 0x0000;
-	sFilterConfig.FilterIdLow 			= 0x0000;
-	sFilterConfig.FilterMaskIdHigh 		= 0x0000;
-	sFilterConfig.FilterMaskIdLow 		= 0x0000;
-	sFilterConfig.FilterFIFOAssignment 	= CAN_RX_FIFO0;
-	sFilterConfig.FilterActivation 		= ENABLE;
-	sFilterConfig.SlaveStartFilterBank 	= 14;
+	sFilterConfig.FilterBank = 0;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh = 0x0000;
+	sFilterConfig.FilterIdLow = 0x0000;
+	sFilterConfig.FilterMaskIdHigh = 0x0000;
+	sFilterConfig.FilterMaskIdLow = 0x0000;
+	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+	sFilterConfig.FilterActivation = ENABLE;
+	sFilterConfig.SlaveStartFilterBank = 14;
 
-	HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
+	if ( HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK )
+	{
+//		Error_Handler();
+	}
 
-	HAL_CAN_Start(&hcan);
-
+	if ( HAL_CAN_Start(&hcan) != HAL_OK )
+	{
+//		Error_Handler();
+	}
 }
 #endif
 
@@ -60,7 +69,11 @@ void CanConfig(void)
  */
 void MiniDrv_SendUnpackDataInTerminal(uint8_t *dataArray, uint16_t lengthArray)
 {
-	HAL_UART_Transmit(&huart1, dataArray, lengthArray, UART_TIMEOUT);
+	if ( HAL_UART_Transmit(&huart1, dataArray, lengthArray, UART_TIMEOUT) != HAL_OK )
+	{
+		Error_Handler();
+	}
+
 	return;
 }
 
@@ -73,7 +86,11 @@ void MiniDrv_SendUnpackDataInTerminal(uint8_t *dataArray, uint16_t lengthArray)
  */
 void MiniDrv_SendPackDataViaUART(uint8_t byte)
 {
-	HAL_UART_Transmit(&huart2, &byte, sizeof(byte), UART_TIMEOUT);
+	if ( HAL_UART_Transmit(&huart2, &byte, sizeof(byte), UART_TIMEOUT) != HAL_OK )
+	{
+		Error_Handler();
+	}
+
 	return;
 }
 
@@ -81,21 +98,31 @@ void MiniDrv_SendPackDataViaUART(uint8_t byte)
 
 /**
  * @brief	sends the packed data to CAN
- * @param	byte - one byte of data to send CAN
+ * @param	byte - one byte of data to send via CAN
  * @retval	none
  */
 void MiniDrv_SendPackDataViaCAN(uint8_t byte)
 {
-	txHeader.StdId 				= 0x0000;
-	txHeader.ExtId 				= 0x0000;
-	txHeader.RTR 				= CAN_RTR_DATA;
-	txHeader.IDE 				= CAN_ID_STD;
-	txHeader.DLC 				= 1;
+	txHeader.StdId 	= 0x11;
+//	txHeader.ExtId 	= 0x0000;
+	txHeader.RTR 	= CAN_RTR_DATA;
+	txHeader.IDE 	= CAN_ID_STD;
+	txHeader.DLC 	= 8;
 	txHeader.TransmitGlobalTime = DISABLE;
+	txMailbox 		= 0;
 
-	uint32_t mailBoxNum = 0;
+	for (uint8_t i = 0; i < 8; i++)
+	{
+		txData[i] = byte;
+	}
 
-	HAL_CAN_AddTxMessage(&hcan, &txHeader, byte, &mailBoxNum);
+	if ( HAL_CAN_AddTxMessage(&hcan, &txHeader, txData, &txMailbox) != HAL_OK )
+	{
+//		Error_Handler();
+	}
+
+	/* Wait transmission complete */
+	while( HAL_CAN_GetTxMailboxesFreeLevel(&hcan) != 3 ) {}
 
 	return;
 }
@@ -144,34 +171,43 @@ void MiniDrv_Send(uint8_t *dataArray, uint8_t lengthArray)
 void MiniDrv_Receive()
 {
 
-
 #ifdef UART
 	uint8_t byte[1024];
 
-	HAL_UART_Receive(&huart2, &byte[0], sizeof(byte), UART_TIMEOUT);
+	if ( HAL_UART_Receive(&huart2, &byte[0], sizeof(byte), UART_TIMEOUT) != HAL_OK )
+	{
+//		Error_Handler();
+	}
 
 	for(int i = 0; i < sizeof(byte); i++)
 	{
 		minihdlc_char_receiver( byte[i] );
 	}
 #else
-	uint8_t msgData[8];
-	rxHeader.StdId 	= 0x0000;
-	rxHeader.ExtId 	= 0x0000;
-	rxHeader.RTR 	= CAN_RTR_DATA;
-	rxHeader.IDE 	= CAN_ID_STD;
-	rxHeader.DLC 	= 1;
+	uint8_t byte;
 
-	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &rxHeader, msgData);
-
-	for(int i = 0; i < sizeof(msgData); i++)
+	/* Start the Reception process */
+	if ( HAL_CAN_GetRxFifoFillLevel(&hcan, CAN_RX_FIFO0) != 1 )
 	{
-		minihdlc_char_receiver( msgData[i] );
+//	    Error_Handler();
 	}
+
+	if ( HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &rxHeader, rxData) != HAL_OK )
+	{
+//	    Error_Handler();
+	}
+
+	if ((rxHeader.StdId == 0x11) && (rxHeader.RTR == CAN_RTR_DATA) && (rxHeader.IDE == CAN_ID_STD))
+	{
+		byte = rxData [7];
+		minihdlc_char_receiver(byte);
+	}
+
+//	for(int i = 0; i < sizeof(msgData); i++)
+//	{
+//		minihdlc_char_receiver( msgData[i] );
+//	}
 #endif
 
 	return;
 }
-
-
-
