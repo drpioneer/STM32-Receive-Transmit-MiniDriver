@@ -205,9 +205,13 @@ void StartTask02(void const * argument)
 
 	/* Sending data to channel (transmitter) */
 #ifndef RECEIVER
-//    MiniDrv_Send(dataArray, sizeof(dataArray));
+//	for (uint8_t i = 0; i < sizeof(dataArray) - 1; i++)
+//	{
+//		dataArray[i] = dataArray[i] + 1;
+//	}
+    MiniDrv_Send(dataArray, sizeof(dataArray));
 #endif
-	osDelay(1000);
+	osDelay(200);
 
   }
   /* USER CODE END StartTask02 */
