@@ -24,6 +24,4 @@
 3. [Программатор ST-Link V2 для STM8, STM32](https://amperkot.ru/msk/catalog/programmator_stlink_v2_dlya_stm8_stm32-24309549.html) - 2 шт.
 4. [USB-TTL модуль CP2102](https://amperkot.ru/msk/catalog/usbttl_modul_cp2102-25061120.html) - 1 шт.
 
-**Автор:** Скосырский А.А.
-**Версия:** 0.1
 * * *
